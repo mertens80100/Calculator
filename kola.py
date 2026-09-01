@@ -1,54 +1,53 @@
-import tkinter as tk
+"""Tkinter interface for the arithmetic calculator."""
 
-# Tuşa basılınca gerçekleşen olay
-def button_click(value):
-    current = entry.get()
-    entry.delete(0, tk.END)
-    entry.insert(tk.END, current + value)
+from calculator import CalculationError, calculate_expression
 
-# Eşittir butonuna basıldığında hesaplama
-def calculate():
-    try:
-        result = eval(entry.get())  # İşlemi değerlendirir
-        entry.delete(0, tk.END)
-        entry.insert(tk.END, str(result))
-    except Exception as e:
-        entry.delete(0, tk.END)
-        entry.insert(tk.END, "Hata!")
 
-# Giriş alanını temizleme fonksiyonu
-def clear():
-    entry.delete(0, tk.END)
+def main():
+    # Keeping Tk initialization here allows tests to import this module headlessly.
+    import tkinter as tk
 
-# Pencere oluşturma
-window = tk.Tk()
-window.title("Apple Tarzı Hesap Makinesi")
+    window = tk.Tk()
+    window.title("Arithmetic Calculator")
+    expression = tk.StringVar()
+    status = tk.StringVar()
+    entry = tk.Entry(window, textvariable=expression, font=("Arial", 24), width=20)
+    entry.grid(row=0, column=0, columnspan=4, padx=8, pady=8, sticky="ew")
 
-# Giriş alanı
-entry = tk.Entry(window, width=16, font=('Arial', 24), borderwidth=2, relief="solid")
-entry.grid(row=0, column=0, columnspan=4)
+    def append(value):
+        status.set("")
+        expression.set(expression.get() + value)
 
-# Butonları tanımlama
-buttons = [
-    '7', '8', '9', '/',
-    '4', '5', '6', '*',
-    '1', '2', '3', '-',
-    '0', '.', '=', '+'
-]
+    def calculate(event=None):
+        try:
+            result = calculate_expression(expression.get())
+        except CalculationError as error:
+            status.set(str(error))
+        else:
+            expression.set(str(result))
+            status.set("")
 
-# Butonları yerleştirme
-row = 1
-col = 0
-for button in buttons:
-    action = lambda x=button: button_click(x) if x != '=' else calculate()
-    tk.Button(window, text=button, width=5, height=2, font=('Arial', 18), command=action).grid(row=row, column=col)
-    col += 1
-    if col > 3:
-        col = 0
-        row += 1
+    def clear(event=None):
+        expression.set("")
+        status.set("")
 
-# Temizleme butonu
-tk.Button(window, text='C', width=5, height=2, font=('Arial', 18), command=clear).grid(row=row, column=0, columnspan=4)
+    keys = ["7", "8", "9", "/", "4", "5", "6", "*", "1", "2", "3", "-", "0", ".", "=", "+"]
+    for index, key in enumerate(keys):
+        action = calculate if key == "=" else lambda value=key: append(value)
+        tk.Button(window, text=key, font=("Arial", 18), command=action).grid(
+            row=index // 4 + 1, column=index % 4, padx=2, pady=2, sticky="nsew"
+        )
+    tk.Button(window, text="Clear", command=clear).grid(row=5, column=0, columnspan=4, sticky="ew")
+    tk.Label(window, textvariable=status, foreground="#a40000", wraplength=340).grid(
+        row=6, column=0, columnspan=4, padx=8, pady=8
+    )
+    for column in range(4):
+        window.columnconfigure(column, weight=1)
+    window.bind("<Return>", calculate)
+    window.bind("<Escape>", clear)
+    entry.focus_set()
+    window.mainloop()
 
-# Pencereyi çalıştırma
-window.mainloop()
+
+if __name__ == "__main__":
+    main()
